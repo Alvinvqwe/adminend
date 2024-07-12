@@ -27,7 +27,7 @@
         "src/.umi/*"
       ],
       "@umijs/max": [
-        "/Users/mac/Documents/server/adminend_a/node_modules/umi"
+        "/Users/mac/Documents/baisegit/adminend/node_modules/umi"
       ],
       "@umijs/max/typings": [
         "src/.umi/typings"

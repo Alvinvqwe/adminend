@@ -1,4 +1,5 @@
 import bgVideo from '@/public/bg_.mp4';
+import { setSession } from '@/utils/sessions';
 import { LockOutlined, UserOutlined } from '@ant-design/icons';
 import {
   LoginFormPage,
@@ -6,8 +7,9 @@ import {
   ProFormCheckbox,
   ProFormText,
 } from '@ant-design/pro-components';
-import { history, request } from '@umijs/max';
+import { history } from '@umijs/max';
 import { Button, message, theme } from 'antd';
+import apiRequest from '../../utils/axios';
 
 interface LoginFormValues {
   username: string;
@@ -21,15 +23,16 @@ const Page = () => {
   const handleSubmit = async (values: LoginFormValues) => {
     console.log(values);
     try {
-      const response = await request('/api/auth/admin/login', {
+      const response = await apiRequest('/auth/admin/login', {
         method: 'POST',
         data: values,
       });
-      if (response.success) {
+      if (response.data.success) {
         message.success('登录成功！');
+        setSession(response.data.accessToken_key);
         history.push('/home');
       } else {
-        message.error(response.message || '登录失败，请重试！');
+        message.error(response.data.message || '登录失败，请重试！');
       }
     } catch (error) {
       console.error('登录请求失败:', error);
@@ -80,7 +83,7 @@ const Page = () => {
       >
         <h1 style={{ textAlign: 'center' }}>账号密码登录</h1>
         <ProFormText
-          name="email"
+          name="username"
           fieldProps={{
             size: 'large',
             prefix: (

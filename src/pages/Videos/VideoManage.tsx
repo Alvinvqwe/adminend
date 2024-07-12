@@ -1,80 +1,89 @@
 // src/pages/VideoManagement.tsx
-import { InboxOutlined } from '@ant-design/icons';
 import type { ProColumns } from '@ant-design/pro-components';
-import {
-  PageContainer,
-  ProForm,
-  ProFormDatePicker,
-  ProFormSelect,
-  ProFormText,
-  ProFormTextArea,
-  ProTable,
-} from '@ant-design/pro-components';
-import { Button, Modal, Tabs, Upload, UploadProps, message } from 'antd';
-import type { RcFile, UploadFile } from 'antd/es/upload/interface';
-import React, { useState } from 'react';
+import { PageContainer, ProTable } from '@ant-design/pro-components';
+import { Tabs, message } from 'antd';
+import React, { useEffect, useState } from 'react';
+import VideoUploadForm from './UploadForm';
 
 interface Video {
   id: number;
   title: string;
-  uploadTime: string;
-  status: string;
-  tags: string[];
   description: string;
+  uploader_id: number;
+  upload_date: Date;
+  video_url: string;
+  video_length: string;
+  clarity: string;
+  review_status: string;
 }
 
-const fetchVideos = async (params: any) => {
-  // 在这里实现获取视频数据的接口调用
-  try {
-    const response = await fetch('/api/videos', { method: 'GET' });
-    const data = await response.json();
-    return { data: data.videos, success: true, total: data.total };
-  } catch (error) {
-    message.error('获取视频数据失败');
-    return { data: [], success: false, total: 0 };
-  }
-};
+interface Tag {
+  id: number;
+  name: string;
+}
 
-const uploadVideo = async (values: any, fileList: UploadFile[]) => {
-  // 在这里实现上传视频的接口调用
-  try {
-    const formData = new FormData();
-    fileList.forEach((file) => {
-      formData.append('files[]', file as RcFile);
-    });
-    Object.keys(values).forEach((key) => {
-      formData.append(key, values[key]);
-    });
+// const fetchVideos = async (params: any) => {
+//   // 在这里实现获取视频数据的接口调用
+//   try {
+//     const response = await fetch('/api/videos', {
+//       method: 'POST',
+//       body: JSON.stringify(params),
+//     });
+//     const data = await response.json();
+//     if (!data.success) {
+//       message.error('获取视频数据失败');
+//     }
+//     return data;
+//   } catch (error) {
+//     message.error('获取视频数据失败');
+//     return { data: [], success: false, total: 0 };
+//   }
+// };
 
-    const response = await fetch('/api/videos', {
-      method: 'POST',
-      body: formData,
-    });
+// const uploadVideo = async (values: any, fileList: UploadFile[]) => {
+//   // 在这里实现上传视频的接口调用
+//   try {
+//     const formData = new FormData();
+//     fileList.forEach((file) => {
+//       formData.append('files[]', file as RcFile);
+//     });
+//     Object.keys(values).forEach((key) => {
+//       formData.append(key, values[key]);
+//     });
 
-    if (response.ok) {
-      message.success('视频上传成功');
-      return true;
-    } else {
-      message.error('视频上传失败');
-      return false;
-    }
-  } catch (error) {
-    message.error('视频上传失败');
-    return false;
-  }
-};
+//     const response = await request('/api/videos', {
+//       method: 'POST',
+//       data: formData,
+//     });
+
+//     if (response.ok) {
+//       message.success('视频上传成功');
+//       return true;
+//     } else {
+//       message.error('视频上传失败');
+//       return false;
+//     }
+//   } catch (error) {
+//     message.error('视频上传失败');
+//     return false;
+//   }
+// };
 
 const VideoManagement: React.FC = () => {
-  const [isModalVisible, setIsModalVisible] = useState(false);
-  const [fileList, setFileList] = useState<UploadFile[]>([]);
+  const [tags, setTags] = useState<Tag[]>([]);
 
-  const handleUpload = () => {
-    setIsModalVisible(true);
-  };
-
-  const handleCancel = () => {
-    setIsModalVisible(false);
-  };
+  useEffect(() => {
+    const fetchTags = async () => {
+      const response = await fetch('/api/video/tags');
+      const res = await response.json();
+      if (!res.success) {
+        message.error('获取标签数据失败');
+        return;
+      }
+      setTags(res.data);
+    };
+    fetchTags();
+  }, []);
 
   const columns: ProColumns<Video>[] = [
     { title: '视频标题', dataIndex: 'title', key: 'title' },
@@ -88,35 +97,39 @@ const VideoManagement: React.FC = () => {
     { title: '操作', key: 'action', render: () => <a>编辑</a> },
   ];
 
-  const uploadProps: UploadProps = {
-    onRemove: (file) => {
-      setFileList((prevList) =>
-        prevList.filter((item) => item.uid !== file.uid),
-      );
-    },
-    beforeUpload: (file) => {
-      setFileList((prevList) => [...prevList, file]);
-      return false;
-    },
-    fileList,
-  };
-
   const tabItems = [
     {
       key: '1',
       label: '视频列表',
       children: (
         <>
-          <Button
-            type="primary"
-            onClick={handleUpload}
-            style={{ marginBlockEnd: 10 }}
-          >
-            上传视频
-          </Button>
           <ProTable<Video>
             columns={columns}
-            request={fetchVideos}
+            request={async () => {
+              // 在这里实现获取视频数据的接口调用
+              try {
+                const response = await fetch('/api/videos/', {
+                  method: 'POST',
+                  body: JSON.stringify({
+                    type: 'viewed ranking',
+                    limit: 10,
+                    offset: 0,
+                  }),
+                });
+                const res = await response.json();
+                if (!res.success) {
+                  return { data: [], success: false, total: 0 };
+                }
+                return {
+                  data: res.data,
+                  success: true,
+                  total: res.data.length,
+                };
+              } catch (error) {
+                // message.error('获取视频数据失败');
+                return { data: [], success: false, total: 0 };
+              }
+            }}
             rowKey="id"
             pagination={{ pageSize: 10 }}
             search={false}
@@ -131,7 +144,27 @@ const VideoManagement: React.FC = () => {
       children: (
         <ProTable<Video>
           columns={columns}
-          request={fetchVideos}
+          request={async () => {
+            // 在这里实现获取视频数据的接口调用
+            try {
+              const response = await fetch('/api/videos', {
+                method: 'POST',
+                body: JSON.stringify({
+                  type: 'pendings',
+                  limit: 10,
+                  offset: 0,
+                }),
+              });
+              const res = await response.json();
+              if (!res.success) {
+                return { data: [], success: false, total: 0 };
+              }
+              return { data: res.data, success: true, total: res.data.length };
+            } catch (error) {
+              message.error('获取视频数据失败');
+              return { data: [], success: false, total: 0 };
+            }
+          }}
           rowKey="id"
           pagination={{ pageSize: 10 }}
           search={false}
@@ -142,13 +175,11 @@ const VideoManagement: React.FC = () => {
       key: '3',
       label: '视频标签管理',
       children: (
-        <ProTable<{ tag: string; count: number }>
-          columns={[
-            { title: '标签', dataIndex: 'tag', key: 'tag' },
-            { title: '关联视频数', dataIndex: 'count', key: 'count' },
-          ]}
-          request={async (params) => {
+        <ProTable<{ tag: string; count: number; key: number }>
+          columns={[{ title: '标签', dataIndex: '视频关联数量', key: 'id' }]}
+          request={async () => {
             // 在这里实现获取标签数据的接口调用
+            console.log(tags);
             try {
               const response = await fetch('/api/tags', { method: 'GET' });
               const data = await response.json();
@@ -164,58 +195,16 @@ const VideoManagement: React.FC = () => {
         />
       ),
     },
+    {
+      key: '4',
+      label: '上传视频',
+      children: <VideoUploadForm />,
+    },
   ];
 
   return (
     <PageContainer title="视频管理">
       <Tabs defaultActiveKey="1" items={tabItems} />
-
-      <Modal
-        title="上传视频"
-        open={isModalVisible}
-        onCancel={handleCancel}
-        footer={null}
-      >
-        <ProForm
-          onFinish={async (values) => {
-            const success = await uploadVideo(values, fileList);
-            if (success) {
-              setIsModalVisible(false);
-            }
-          }}
-        >
-          <ProFormText
-            name="title"
-            label="视频标题"
-            placeholder="请输入视频标题"
-          />
-          <ProFormTextArea
-            name="description"
-            label="视频描述"
-            placeholder="请输入视频描述"
-          />
-          <ProFormSelect
-            name="tags"
-            label="视频标签"
-            mode="multiple"
-            placeholder="请选择视频标签"
-            options={[
-              { label: '标签1', value: 'tag1' },
-              { label: '标签2', value: 'tag2' },
-            ]}
-          />
-          <ProFormDatePicker name="uploadTime" label="上传时间" />
-          <Upload.Dragger {...uploadProps} style={{ marginBlockEnd: 20 }}>
-            <p className="ant-upload-drag-icon">
-              <InboxOutlined />
-            </p>
-            <p className="ant-upload-text">点击或拖拽文件到此区域上传</p>
-            <p className="ant-upload-hint">
-              支持单个或批量上传。严禁上传公司数据或其他带有敏感信息的文件
-            </p>
-          </Upload.Dragger>
-        </ProForm>
-      </Modal>
     </PageContainer>
   );
 };
